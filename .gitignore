@@ -31,6 +31,13 @@ yarn-error.log*
 # vercel
 .vercel
 
+# brainstorm session files
+.superpowers/
+
+# playwright
+test-results/
+playwright-report/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
