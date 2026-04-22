@@ -22,8 +22,8 @@ export default function FileUpload({ onResult, onError, disabled }) {
     form.append('audio', file, file.name);
     try {
       const res = await fetch('/api/pipeline', { method: 'POST', body: form });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Pipeline failed');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data) throw new Error(data?.error ?? `Server error (${res.status})`);
       onResult?.(data);
     } catch (err) {
       onError?.(err.message);
