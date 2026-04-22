@@ -1,4 +1,12 @@
+// Mock the HF Inference SDK
+jest.mock('@huggingface/inference', () => ({
+  HfInference: jest.fn().mockImplementation(() => ({
+    automaticSpeechRecognition: jest.fn(),
+  })),
+}));
+
 import { transcribeAudio, translateText } from '../../lib/huggingface.js';
+import { HfInference } from '@huggingface/inference';
 
 global.fetch = jest.fn();
 
@@ -9,26 +17,32 @@ beforeEach(() => {
 
 describe('transcribeAudio', () => {
   test('returns text on success', async () => {
-    fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ text: 'नमस्ते' }) });
+    const mockASR = jest.fn().mockResolvedValue({ text: 'नमस्ते' });
+    HfInference.mockImplementation(() => ({ automaticSpeechRecognition: mockASR }));
+
     const result = await transcribeAudio(Buffer.from('audio'), 'audio/wav');
     expect(result.text).toBe('नमस्ते');
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(mockASR).toHaveBeenCalledTimes(1);
   });
 
-  test('retries on 503 then succeeds', async () => {
-    fetch
-      .mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({ error: 'loading' }) })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ text: 'hello' }) });
+  test('retries on loading error then succeeds', async () => {
+    const mockASR = jest.fn()
+      .mockRejectedValueOnce(new Error('503 Model is currently loading'))
+      .mockResolvedValueOnce({ text: 'hello' });
+    HfInference.mockImplementation(() => ({ automaticSpeechRecognition: mockASR }));
+
     const result = await transcribeAudio(Buffer.from('audio'), 'audio/wav');
     expect(result.text).toBe('hello');
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(mockASR).toHaveBeenCalledTimes(2);
   });
 
   test('throws after 3 failed attempts', async () => {
-    fetch.mockResolvedValue({ ok: false, status: 503, json: async () => ({ error: 'loading' }) });
+    const mockASR = jest.fn().mockRejectedValue(new Error('503 loading'));
+    HfInference.mockImplementation(() => ({ automaticSpeechRecognition: mockASR }));
+
     await expect(transcribeAudio(Buffer.from('audio'), 'audio/wav'))
       .rejects.toThrow('HF Whisper failed after 3 attempts');
-    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(mockASR).toHaveBeenCalledTimes(3);
   });
 });
 
