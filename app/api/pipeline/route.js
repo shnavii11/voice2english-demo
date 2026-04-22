@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { transcribeAudio, translateText } from '@/lib/huggingface';
+import { transcribeAudio, translateText } from '@/lib/groq';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;

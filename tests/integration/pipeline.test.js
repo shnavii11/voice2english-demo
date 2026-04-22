@@ -1,10 +1,10 @@
-jest.mock('../../lib/huggingface.js', () => ({
+jest.mock('../../lib/groq.js', () => ({
   transcribeAudio: jest.fn(),
   translateText: jest.fn(),
 }));
 
 import { POST } from '../../app/api/pipeline/route.js';
-import { transcribeAudio, translateText } from '../../lib/huggingface.js';
+import { transcribeAudio, translateText } from '../../lib/groq.js';
 
 function makeRequest(fileBuffer, filename = 'test.wav', mimeType = 'audio/wav') {
   const formData = new FormData();
@@ -40,7 +40,7 @@ test('returns 400 when no audio file', async () => {
 });
 
 test('returns 500 when HF throws', async () => {
-  transcribeAudio.mockRejectedValue(new Error('HF Whisper failed after 3 attempts: loading'));
+  transcribeAudio.mockRejectedValue(new Error('Groq Whisper failed after 3 attempts: loading'));
   const res = await POST(makeRequest(Buffer.from('fake-audio')));
   expect(res.status).toBe(500);
 });
