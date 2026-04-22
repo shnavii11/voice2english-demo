@@ -1,101 +1,138 @@
-import Image from "next/image";
+'use client';
+import { useState, useEffect } from 'react';
+import AudioRecorder from '@/components/AudioRecorder';
+import FileUpload from '@/components/FileUpload';
+import ResultsPanel from '@/components/ResultsPanel';
+import MetricsDisplay from '@/components/MetricsDisplay';
+import EvaluationPanel from '@/components/EvaluationPanel';
+
+const STORAGE_KEY = 'v2e_last_result';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [mode, setMode]           = useState('record');
+  const [result, setResult]       = useState(null);
+  const [error, setError]         = useState('');
+  const [processing, setProcessing] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) setResult(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  function handleResult(data) {
+    if (!data) { setProcessing(true); setError(''); return; }
+    setProcessing(false);
+    setError('');
+    setResult(data);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+  }
+
+  function handleError(msg) {
+    setProcessing(false);
+    setError(msg);
+  }
+
+  return (
+    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
+      {/* Warm radial backdrop */}
+      <div className="fixed inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse 100% 45% at 50% -5%, color-mix(in oklch, var(--primary) 8%, transparent) 0%, transparent 60%)' }} />
+
+      <div className="relative z-10 max-w-3xl mx-auto px-5 py-10 pb-20">
+
+        {/* ── Header ── */}
+        <header className="mb-10">
+          <div className="flex items-end gap-3 mb-2">
+            <h1 className="text-4xl font-bold tracking-tight leading-none"
+              style={{ color: 'var(--primary)' }}>
+              voice<span style={{ color: 'var(--accent)' }}>2</span>english
+            </h1>
+            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide mb-0.5"
+              style={{ background: 'var(--muted)', border: '1px solid var(--border)', color: 'var(--accent)' }}>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse inline-block" style={{ background: 'var(--primary)' }} />
+              Live Demo
+            </span>
+          </div>
+          <p className="text-[13px] italic" style={{ fontFamily: 'Merriweather, serif', color: 'var(--muted-fg)' }}>
+            A Hindi speech-to-English translation pipeline — powered by Hugging Face.
+          </p>
+        </header>
+
+        {/* ── Mode tabs ── */}
+        <div className="inline-flex gap-1 rounded-lg p-1 mb-6"
+          style={{ background: 'var(--muted)', border: '1px solid var(--border)' }}>
+          {[{ id: 'record', label: '🎙  Record' }, { id: 'upload', label: '📎  Upload File' }].map(t => (
+            <button key={t.id} onClick={() => setMode(t.id)}
+              className="px-5 py-2 rounded-md text-[13px] font-medium transition-all"
+              style={{
+                background: mode === t.id ? 'var(--card)' : 'transparent',
+                color: mode === t.id ? 'var(--fg)' : 'var(--muted-fg)',
+                border: mode === t.id ? '1px solid var(--border)' : '1px solid transparent',
+                boxShadow: mode === t.id ? '0 1px 6px rgba(0,0,0,0.06)' : 'none',
+              }}>
+              {t.label}
+            </button>
+          ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* ── Input card ── */}
+        <div className="rounded-2xl p-9 mb-5 relative overflow-hidden"
+          style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+          {/* Top shimmer line */}
+          <div className="absolute top-0 left-[10%] right-[10%] h-px"
+            style={{ background: 'linear-gradient(90deg, transparent, var(--primary), var(--accent), transparent)', opacity: 0.55 }} />
+
+          {mode === 'record' ? (
+            <>
+              <AudioRecorder onResult={handleResult} onError={handleError} disabled={processing} />
+              <div className="flex items-center gap-3 my-5">
+                <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+                <span className="text-[11px] italic" style={{ fontFamily: 'Merriweather, serif', color: 'var(--muted-fg)', opacity: 0.7 }}>or drag a file below</span>
+                <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+              </div>
+              <FileUpload onResult={handleResult} onError={handleError} disabled={processing} />
+            </>
+          ) : (
+            <FileUpload onResult={handleResult} onError={handleError} disabled={processing} />
+          )}
+        </div>
+
+        {/* ── Processing badge ── */}
+        {processing && (
+          <div className="flex justify-center mb-4">
+            <span className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[11px] font-semibold tracking-wide uppercase"
+              style={{ background: 'var(--muted)', border: '1px solid var(--border)', color: 'var(--accent)' }}>
+              <span className="w-3 h-3 rounded-full border-2 animate-spin inline-block"
+                style={{ borderColor: 'color-mix(in oklch, var(--accent) 30%, transparent)', borderTopColor: 'var(--accent)' }} />
+              Transcribing → Translating
+            </span>
+          </div>
+        )}
+
+        {/* ── Error ── */}
+        {error && (
+          <div className="rounded-lg px-4 py-3 mb-4 text-sm"
+            style={{ background: 'oklch(0.95 0.02 22)', border: '1px solid oklch(0.85 0.08 22)', color: 'oklch(0.45 0.18 22)' }}>
+            ⚠ {error}
+          </div>
+        )}
+
+        {/* ── Results ── */}
+        {result && (
+          <div className="flex flex-col gap-4">
+            <ResultsPanel result={result} />
+            <MetricsDisplay timing={result.timing} />
+            <EvaluationPanel hypothesis={result.translation} />
+          </div>
+        )}
+
+        <footer className="mt-12 text-center text-[11px] italic pt-5"
+          style={{ fontFamily: 'Merriweather, serif', color: 'var(--muted-fg)', borderTop: '1px solid var(--border)' }}>
+          Powered by Hugging Face · Whisper large-v3 · Helsinki-NLP/opus-mt-hi-en
+        </footer>
+      </div>
     </div>
   );
 }
